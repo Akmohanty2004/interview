@@ -22,18 +22,20 @@ public interface MockTestRepository extends JpaRepository<MockTest, Long> {
 
     long countByStatus(MockTestStatus status);
 
-    @Query("SELECT AVG(m.percentage) FROM MockTest m WHERE m.user.id = :userId AND m.status = 'COMPLETED'")
+    @Query("SELECT AVG(m.percentage) FROM MockTest m WHERE m.user.id = :userId AND m.status = com.interviewprep.entity.MockTestStatus.COMPLETED")
     Double getAveragePercentageByUserId(@Param("userId") Long userId);
 
-    @Query("SELECT MAX(m.percentage) FROM MockTest m WHERE m.user.id = :userId AND m.status = 'COMPLETED'")
+    @Query("SELECT MAX(m.percentage) FROM MockTest m WHERE m.user.id = :userId AND m.status = com.interviewprep.entity.MockTestStatus.COMPLETED")
     Double getMaxPercentageByUserId(@Param("userId") Long userId);
 
-    @Query("SELECT AVG(m.accuracy) FROM MockTest m WHERE m.user.id = :userId AND m.status = 'COMPLETED'")
+    @Query("SELECT AVG(m.accuracy) FROM MockTest m WHERE m.user.id = :userId AND m.status = com.interviewprep.entity.MockTestStatus.COMPLETED")
     Double getAverageAccuracyByUserId(@Param("userId") Long userId);
 
-    @Query("SELECT AVG(m.percentage) FROM MockTest m WHERE m.status = 'COMPLETED'")
+    @Query("SELECT AVG(m.percentage) FROM MockTest m WHERE m.status = com.interviewprep.entity.MockTestStatus.COMPLETED")
     Double getOverallAveragePercentage();
 
-    @Query("SELECT m FROM MockTest m WHERE m.status = 'COMPLETED' ORDER BY m.createdAt DESC")
+    @Query("SELECT m FROM MockTest m WHERE m.status = com.interviewprep.entity.MockTestStatus.COMPLETED ORDER BY m.createdAt DESC")
     List<MockTest> findRecentCompletedTests();
+
+    List<MockTest> findTop10ByStatusOrderByCreatedAtDesc(MockTestStatus status);
 }

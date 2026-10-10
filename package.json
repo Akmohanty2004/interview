@@ -8,6 +8,7 @@
     "start": "npm.cmd --prefix frontend run dev",
     "build": "npm.cmd --prefix frontend run build",
     "frontend": "npm.cmd --prefix frontend run dev",
-    "backend": "tools\\apache-maven-3.9.6\\bin\\mvn.cmd -f backend/pom.xml spring-boot:run"
+    "backend": "powershell -Command \"$env:JAVA_HOME = if ($env:JAVA_HOME) { $env:JAVA_HOME } else { [System.Environment]::GetEnvironmentVariable('JAVA_HOME', 'User') }; $env:Path = \\\"$env:JAVA_HOME\\bin;\\\" + $env:Path; tools\\apache-maven-3.9.6\\bin\\mvn.cmd -f backend/pom.xml spring-boot:run\"",
+    "backend:jar": "powershell -Command \"$env:JAVA_HOME = if ($env:JAVA_HOME) { $env:JAVA_HOME } else { [System.Environment]::GetEnvironmentVariable('JAVA_HOME', 'User') }; & \\\"$env:JAVA_HOME\\bin\\java.exe\\\" -jar target/interviewprep-api-1.0.0.jar --spring.profiles.active=mysql\""
   }
 }

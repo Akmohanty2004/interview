@@ -44,7 +44,7 @@ public class AiChatController {
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create("https://text.pollinations.ai/"))
-                    .timeout(Duration.ofSeconds(20))
+                    .timeout(Duration.ofSeconds(4))
                     .header("Content-Type", "application/json")
                     .header("User-Agent", "InterviewPrep-Server/1.0")
                     .POST(HttpRequest.BodyPublishers.ofString(requestBody))
@@ -101,6 +101,18 @@ public class AiChatController {
 
     private String getDirectShortAnswer(String query) {
         String q = query.toLowerCase();
+        if (q.contains("polymorphism")) {
+            return "Polymorphism means 'many forms'. In Java, it allows objects to perform single actions in different ways via Method Overloading (Compile-Time) and Method Overriding (Runtime).";
+        }
+        if (q.contains("inheritance")) {
+            return "Inheritance is an OOP mechanism where one class acquires the properties and methods of another class, promoting code reusability using the 'extends' keyword.";
+        }
+        if (q.contains("encapsulation")) {
+            return "Encapsulation is bundling data (variables) and methods operating on that data into a single unit (class), while hiding internal details using private access modifiers and getters/setters.";
+        }
+        if (q.contains("deadlock")) {
+            return "Deadlock occurs in multi-threading when two or more threads are blocked forever, each waiting for a lock held by the other in a circular chain.";
+        }
         if (q.contains("what is java") || q.equals("java")) {
             return "Java is a popular, class-based, object-oriented programming language designed to be platform-independent (\"Write Once, Run Anywhere\") using the Java Virtual Machine (JVM).";
         }
@@ -116,6 +128,6 @@ public class AiChatController {
         if (q.contains("what is sql") || q.equals("sql")) {
             return "SQL (Structured Query Language) is the standard programming language used for storing, querying, and managing relational databases.";
         }
-        return "I am here to help you! Please ask any question and I will give you a clear, simple answer.";
+        return "I am here to help you! Please ask any question about Java, Spring Boot, React, Data Structures, or system design.";
     }
 }

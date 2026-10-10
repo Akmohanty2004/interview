@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { GraduationCap, Lock, Mail, User, Building, BookOpen, Calendar, ArrowRight, AlertCircle } from 'lucide-react';
+import { authApi } from '../services/api';
+import { GraduationCap, Lock, Mail, User, Building, BookOpen, Calendar, ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 const Register = () => {
   const { register, loading } = useAuth();
@@ -18,6 +19,11 @@ const Register = () => {
   });
 
   const [error, setError] = useState('');
+  const [isOtpPhase, setIsOtpPhase] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [verifying, setVerifying] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [message, setMessage] = useState('');
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -29,14 +35,43 @@ const Register = () => {
 
     const res = await register(formData);
     if (res.success) {
+      setIsOtpPhase(true);
+      setMessage('OTP has been sent to your email. Please check your inbox.');
+    } else {
+      setError(res.error);
+    }
+  };
+
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    setError('');
+    setVerifying(true);
+    try {
+      await authApi.verifyOtp({ email: formData.email, otp });
       navigate('/login', {
         state: {
           registeredEmail: formData.email,
-          successMessage: 'Registration successful! Please sign in with your password to access your dashboard.',
+          successMessage: 'Email verified successfully! Please sign in.',
         },
       });
-    } else {
-      setError(res.error);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Invalid OTP');
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    setError('');
+    setMessage('');
+    setResending(true);
+    try {
+      await authApi.resendOtp(formData.email);
+      setMessage('A new OTP has been sent to your email.');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to resend OTP');
+    } finally {
+      setResending(false);
     }
   };
 
@@ -66,6 +101,14 @@ const Register = () => {
           </div>
         )}
 
+        {message && (
+          <div className="p-3.5 rounded-xl bg-green-50 border border-green-200 text-green-700 text-xs flex items-center gap-2 animate-scale-in">
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
+            <span>{message}</span>
+          </div>
+        )}
+
+        {!isOtpPhase ? (
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -190,12 +233,53 @@ const Register = () => {
               <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
             ) : (
               <>
-                <span>Create Account &amp; Proceed to Login</span>
+                <span>Create Account</span>
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </>
             )}
           </button>
         </form>
+        ) : (
+        <form onSubmit={handleVerifyOtp} className="space-y-4">
+          <div className="text-center pb-2">
+            <p className="text-sm text-slate-600">Enter the 6-digit code sent to <strong className="text-slate-800">{formData.email}</strong></p>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">Verification Code</label>
+            <input
+              type="text"
+              name="otp"
+              required
+              maxLength={6}
+              value={otp}
+              onChange={(e) => setOtp(e.target.value)}
+              placeholder="000000"
+              className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 text-center text-xl tracking-[0.5em] font-semibold"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={verifying || otp.length !== 6}
+            className="group w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-violet-700 hover:from-indigo-500 hover:to-violet-600 disabled:opacity-60 text-white font-bold text-sm shadow-lg shadow-indigo-600/25 hover:shadow-indigo-600/35 flex items-center justify-center gap-2 transition-all duration-200 mt-6"
+          >
+            {verifying ? (
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            ) : (
+              <span>Verify Email</span>
+            )}
+          </button>
+          <div className="text-center pt-2">
+            <button
+              type="button"
+              onClick={handleResendOtp}
+              disabled={resending}
+              className="text-xs font-medium text-indigo-600 hover:text-indigo-800 disabled:text-slate-400"
+            >
+              {resending ? 'Sending...' : 'Didn\'t receive code? Resend OTP'}
+            </button>
+          </div>
+        </form>
+        )}
 
         <div className="pt-4 border-t border-slate-100 text-center">
           <p className="text-xs text-slate-600">

@@ -163,9 +163,8 @@ public class AnalyticsService {
         Double avgScore = mockTestRepository.getOverallAveragePercentage();
         dto.setAveragePlatformScore(avgScore != null ? Math.round(avgScore * 10.0) / 10.0 : 0.0);
 
-        List<MockTest> recent = mockTestRepository.findRecentCompletedTests();
+        List<MockTest> recent = mockTestRepository.findTop10ByStatusOrderByCreatedAtDesc(MockTestStatus.COMPLETED);
         dto.setRecentTests(recent.stream()
-                .limit(10)
                 .map(MockTestSummaryDto::fromEntity)
                 .collect(Collectors.toList()));
 

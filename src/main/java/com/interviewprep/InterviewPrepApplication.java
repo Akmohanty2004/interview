@@ -7,6 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class InterviewPrepApplication {
 
     public static void main(String[] args) {
+        System.setProperty("java.net.preferIPv6Addresses", "true");
         SpringApplication.run(InterviewPrepApplication.class, args);
     }
 }

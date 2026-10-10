@@ -6,6 +6,7 @@ import com.interviewprep.dto.AuthResponse;
 import com.interviewprep.dto.ChangePasswordRequest;
 import com.interviewprep.dto.RegisterRequest;
 import com.interviewprep.dto.UserDto;
+import com.interviewprep.dto.VerifyOtpRequest;
 import com.interviewprep.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -37,6 +38,20 @@ public class AuthController {
     public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody AuthRequest req) {
         AuthResponse response = authService.login(req);
         return ResponseEntity.ok(ApiResponse.ok("Login successful", response));
+    }
+
+    @PostMapping("/verify-otp")
+    @Operation(summary = "Verify email OTP")
+    public ResponseEntity<ApiResponse<AuthResponse>> verifyOtp(@RequestBody VerifyOtpRequest req) {
+        AuthResponse response = authService.verifyOtp(req);
+        return ResponseEntity.ok(ApiResponse.ok("Email verified successfully", response));
+    }
+
+    @PostMapping("/resend-otp")
+    @Operation(summary = "Resend OTP email")
+    public ResponseEntity<ApiResponse<Void>> resendOtp(@RequestParam String email) {
+        authService.resendOtp(email);
+        return ResponseEntity.ok(ApiResponse.ok("OTP sent successfully", null));
     }
 
     @GetMapping("/me")

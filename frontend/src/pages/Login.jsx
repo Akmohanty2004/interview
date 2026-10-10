@@ -91,7 +91,17 @@ const Login = () => {
           </div>
         )}
 
-        {error && (
+        {error && error === 'ACCOUNT_NOT_VERIFIED' ? (
+          <div className="p-3.5 rounded-xl bg-orange-50 border border-orange-200 text-orange-700 text-xs flex flex-col gap-2 animate-scale-in">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span className="font-semibold">Your email is not verified.</span>
+            </div>
+            <p className="pl-6">
+              Please go to the <Link to="/register" className="font-bold underline text-orange-800">Register</Link> page and submit your details again to receive a new Verification OTP.
+            </p>
+          </div>
+        ) : error && (
           <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2 animate-scale-in">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>

@@ -33,8 +33,6 @@ public class DataSourceConfig {
     @Primary
     @ConditionalOnProperty(name = "spring.profiles.active", havingValue = "mysql", matchIfMissing = true)
     public DataSource dataSource() {
-        HikariDataSource ds = new HikariDataSource();
-
         String resolvedUrl = url;
         String resolvedUser = username;
         String resolvedPass = password;
@@ -56,6 +54,10 @@ public class DataSourceConfig {
                     }
                 }
 
+                if (query != null) {
+                    query = query.replace("ssl-mode=", "sslMode=");
+                }
+
                 resolvedUrl = "jdbc:mysql://" + host + ":" + port + path + (query != null ? "?" + query : "");
                 logger.info("Converted cloud mysql:// URL to JDBC format: {}", resolvedUrl.replaceAll(":[^/@]+@", ":****@"));
             } catch (Exception e) {
@@ -64,36 +66,55 @@ public class DataSourceConfig {
             }
         }
 
+        HikariDataSource ds = new HikariDataSource();
         ds.setJdbcUrl(resolvedUrl);
         ds.setUsername(resolvedUser);
         ds.setPassword(resolvedPass);
         ds.setDriverClassName(driverClassName);
         ds.setMaximumPoolSize(10);
         ds.setMinimumIdle(2);
-        ds.setConnectionTimeout(6000);
+        ds.setConnectionTimeout(30000);
         ds.setIdleTimeout(600000);
         ds.setMaxLifetime(1800000);
+        ds.setKeepaliveTime(30000);
+        ds.setValidationTimeout(5000);
 
-        try (java.sql.Connection conn = ds.getConnection()) {
-            logger.info("Connected to MySQL DataSource with URL: {}", resolvedUrl != null ? resolvedUrl.replaceAll(":[^/@]+@", ":****@") : "null");
-            return ds;
-        } catch (Exception e) {
-            logger.warn("Could not connect to MySQL at {}. Activating zero-config embedded database fallback. Error: {}",
-                    resolvedUrl != null ? resolvedUrl.replaceAll(":[^/@]+@", ":****@") : "null", e.getMessage());
-            try {
-                ds.close();
-            } catch (Exception ignored) {}
-
-            HikariDataSource fallback = new HikariDataSource();
-            fallback.setJdbcUrl("jdbc:h2:file:./data/interviewprep_db;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;AUTO_SERVER=TRUE");
-            fallback.setDriverClassName("org.h2.Driver");
-            fallback.setUsername("sa");
-            fallback.setPassword("");
-            fallback.setMaximumPoolSize(10);
-            fallback.setMinimumIdle(2);
-            fallback.setConnectionTimeout(30000);
-            logger.info("Fallback persistent H2 database activated successfully.");
-            return fallback;
+        Exception lastException = null;
+        for (int attempt = 1; attempt <= 3; attempt++) {
+            try (java.sql.Connection conn = ds.getConnection()) {
+                logger.info("Connected to MySQL DataSource with URL: {}", resolvedUrl != null ? resolvedUrl.replaceAll(":[^/@]+@", ":****@") : "null");
+                return ds;
+            } catch (Exception e) {
+                lastException = e;
+                logger.warn("MySQL connection attempt {}/3 failed: {}. Retrying in 2 seconds...", attempt, e.getMessage());
+                try {
+                    Thread.sleep(2000);
+                } catch (InterruptedException ignored) {}
+            }
         }
+
+        if (resolvedUrl != null && !resolvedUrl.contains("localhost") && !resolvedUrl.contains("127.0.0.1")) {
+            logger.error("FATAL: Could not connect to remote Cloud MySQL database at {}. Aborting startup to guarantee data is stored permanently in Cloud MySQL and prevent data loss.",
+                    resolvedUrl.replaceAll(":[^/@]+@", ":****@"));
+            throw new IllegalStateException("Failed to connect to Cloud MySQL database at " + resolvedUrl.replaceAll(":[^/@]+@", ":****@") + ". Refusing fallback to protect cloud data integrity.", lastException);
+        }
+
+        logger.warn("Could not connect to local MySQL after 3 attempts at {}. Activating zero-config embedded database fallback for local offline development. Error: {}",
+                resolvedUrl != null ? resolvedUrl.replaceAll(":[^/@]+@", ":****@") : "null",
+                lastException != null ? lastException.getMessage() : "Unknown");
+        try {
+            ds.close();
+        } catch (Exception ignored) {}
+
+        HikariDataSource fallback = new HikariDataSource();
+        fallback.setJdbcUrl("jdbc:h2:file:./data/interviewprep_db;DB_CLOSE_DELAY=-1");
+        fallback.setDriverClassName("org.h2.Driver");
+        fallback.setUsername("sa");
+        fallback.setPassword("");
+        fallback.setMaximumPoolSize(10);
+        fallback.setMinimumIdle(2);
+        fallback.setConnectionTimeout(30000);
+        logger.info("Fallback persistent H2 database activated successfully for local dev.");
+        return fallback;
     }
 }
